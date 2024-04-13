@@ -210,7 +210,7 @@ def ok():
     
     
     from tkinter.filedialog import askopenfilename
-    fileName = askopenfilename(initialdir='E:/DDOS Attack 27 Feb 2023/DDOS Attack', title='Select DataFile For INTRUSION Testing',
+    fileName = askopenfilename(initialdir='D:\MCA\SEM 4\PROJECT\DDoS-Attack-Detection', title='Select DataFile For INTRUSION Testing',
                                        filetypes=[("all files", "*.csv*")])
     
     file =pd.read_csv(fileName)

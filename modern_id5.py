@@ -76,21 +76,16 @@ y_test = new_data["label"]
 
     
 def SVM():
-    
-    
-    
+
     model2 = SVC(kernel='linear',random_state=2)
     model2.fit(x_train, y_train)
-    
-    
-    
+ 
     print("=" * 40)
     model2.fit(x_train, y_train)
     
     model2_pred = model2.predict(x_test)
     #print(model2_pred)
-    
-    
+
     print("=" * 40)
     print("==========")
     print("Classification Report : ",(classification_report(y_test, model2_pred)))
@@ -124,16 +119,12 @@ def RF():
     
     model5 = RandomForestClassifier(n_estimators=num_trees, max_features=max_features)
 
-    
-    
     model5.fit(x_train, y_train)
     
     model5_pred = model5.predict(x_test)
 
-        
     print(model5_pred)
-            
-            
+ 
     print("=" * 40)
     print("==========")
     print("Classification Report : ",(classification_report(y_test, model5_pred)))

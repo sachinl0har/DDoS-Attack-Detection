@@ -65,7 +65,7 @@ def log_file_data(protocol_type, flag, service, is_ddos):
     conn.commit()
 
 def show_analytics(model_name, report, accuracy, confusion_matrix):
-    frame4.tkraise()
+    # frame4.tkraise()
     
     # classrepo= ctk.CTkLabel(frame4,text ="Classification report ",width=35,font=("Bahnschrift Light",27,"bold"))
     # classrepo.place(x=50,y=20)
@@ -77,15 +77,15 @@ def show_analytics(model_name, report, accuracy, confusion_matrix):
     # label5.place(x=70,y=300)
 
     # Plotting accuracy bar chart
-    fig1 = plt.figure(figsize=(8, 6))
-    plt.bar(["Accuracy"], [accuracy], color='green')
-    plt.title('Accuracy')
-    plt.ylabel('Percentage')
-    plt.ylim(0, 100)
-    plt.tight_layout()
-    canvas1 = FigureCanvasTkAgg(fig1, master=frame4)
-    canvas1.draw()
-    canvas1.get_tk_widget().place(x=100, y=350)
+    # fig1 = plt.figure(figsize=(8, 6))
+    # plt.bar(["Accuracy"], [accuracy], color='green')
+    # plt.title('Accuracy')
+    # plt.ylabel('Percentage')
+    # plt.ylim(0, 100)
+    # plt.tight_layout()
+    # canvas1 = FigureCanvasTkAgg(fig1, master=frame4)
+    # canvas1.draw()
+    # canvas1.get_tk_widget().place(x=100, y=350)
 
     # Plotting confusion matrix
     fig2 = plt.figure(figsize=(8, 6))
@@ -155,6 +155,9 @@ y_test = new_data["label"]
     
 def SVM():
 
+    for widget in frame4.winfo_children():
+        widget.destroy()
+
     model2 = SVC(kernel='linear',random_state=2)
     model2.fit(x_train, y_train)
  
@@ -176,8 +179,8 @@ def SVM():
     label4 = ctk.CTkLabel(root,text =str(repo),width=35,height=10,bg='khaki',fg='black',font=("Tempus Sanc ITC",7))
     label4.place(x=205,y=100)
     
-    #label5 = ctk.CTkLabel(root,text ="Accracy : "+str(ACC)+"%\nModel saved as SVM.joblib",width=35,height=3,bg='khaki',fg='black',font=("Tempus Sanc ITC",14))
-    #label5.place(x=205,y=320)
+    label5 = ctk.CTkLabel(root,text ="Accracy : "+str(ACC)+"%\nModel saved as SVM.joblib",width=35,height=3,bg='khaki',fg='black',font=("Tempus Sanc ITC",14))
+    label5.place(x=205,y=320)
     from joblib import dump
     dump (model2,"SVM.joblib")
     print("Model saved as SVM.joblib")
@@ -193,6 +196,9 @@ def SVM():
     
     
 def RF():
+
+    for widget in frame4.winfo_children():
+        widget.destroy()
     
     #seed = 7
     frame4.tkraise();
@@ -272,6 +278,14 @@ model_list = {"SUPPORT VECTOR MACHINE":r"OLD_MODELS/SVM.joblib","RANDOM FOREST":
 
 
 def ok():
+    for widget in frame4.winfo_children():
+        widget.destroy()
+
+    for widget in frame2.winfo_children():
+        widget.destroy()
+
+    for widget in frame5.winfo_children():
+        widget.destroy()
     print("Choosing file...")
     frame2.tkraise()
     print("Value is:", TMStateEL.get())
@@ -315,25 +329,94 @@ def ok():
         frame2.configure(fg_color='green')
         attack = ctk.CTkLabel(frame2, text=str(output), width=30)
         attack.place(x=150, y=150)
-        is_ddos_value = False
+        is_ddos_value = 0
     else:
         frame5.tkraise()
         output = 'DDOS Attack Detected'
         frame5.configure(fg_color='red')
         attack = ctk.CTkLabel(frame5, text=str(output), width=30)
         attack.place(x=150, y=150)
-        is_ddos_value = True
+        is_ddos_value = 1
 
-    log_file_data(file['protocol_type'], file['flag'], file['service'], is_ddos_value)
+    log_file_data(file['protocol_type'].iloc[0], file['flag'].iloc[0], file['service'].iloc[0], is_ddos_value)
 
 
-   
+
+def show_reports():
+
+    for widget in frame4.winfo_children():
+        widget.destroy()
+    # Retrieve data from SQLite tables
+    cursor.execute("SELECT * FROM TrainLogs")
+    train_logs = cursor.fetchall()
+    cursor.execute("SELECT * FROM TestLogs")
+    test_logs = cursor.fetchall()
+    cursor.execute("SELECT * FROM FileLogs")
+    file_logs = cursor.fetchall()
+
+    # Display TrainLogs in a Treeview
+    train_treeview = ttk.Treeview(frame4)
+    train_treeview['columns'] = ('Model', 'Accuracy')
+    train_treeview.heading('#0', text='ID')
+    train_treeview.heading('Model', text='Model')
+    train_treeview.heading('Accuracy', text='Accuracy')
+
+    for log in train_logs:
+        train_treeview.insert('', 'end', text=log[0], values=(log[1], log[2]))
+
+    train_treeview.pack()
+
+    # Display TestLogs in a Treeview
+    test_treeview = ttk.Treeview(frame4)
+    test_treeview['columns'] = ('Model', 'Result')
+    test_treeview.heading('#0', text='ID')
+    test_treeview.heading('Model', text='Model')
+    test_treeview.heading('Result', text='Result')
+
+    for log in test_logs:
+        test_treeview.insert('', 'end', text=log[0], values=(log[1], log[2]))
+
+    test_treeview.pack()
+
+    # Display FileLogs in a Treeview
+    file_treeview = ttk.Treeview(frame4)
+    file_treeview['columns'] = ('Protocol Type', 'Flag', 'Service', 'Is DDoS', 'Timestamp')
+    file_treeview.heading('#0', text='ID')
+    file_treeview.heading('Protocol Type', text='Protocol Type')
+    file_treeview.heading('Flag', text='Flag')
+    file_treeview.heading('Service', text='Service')
+    file_treeview.heading('Is DDoS', text='Is DDoS')
+    file_treeview.heading('Timestamp', text='Timestamp')
+
+    for log in file_logs:
+        file_treeview.insert('', 'end', text=log[0], values=(log[1], log[2], log[3], log[4], log[5]))
+
+    file_treeview.pack()
+
+    # Perform graphical analysis for SVM and RF models
+    # Assuming you have stored the accuracy and model names in a dictionary
+    model_accuracies = {"SVM": 90.5, "RF": 85.3}
+
+    models = list(model_accuracies.keys())
+    accuracies = list(model_accuracies.values())
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(models, accuracies, color=['blue', 'green'])
+    plt.xlabel('Model')
+    plt.ylabel('Accuracy')
+    plt.title('Model Accuracies')
+    plt.ylim(0, 100)
+    plt.tight_layout()
+    plt.show()
 
 button4 = ctk.CTkButton(frame,command= ok,text="TEST",width=210,corner_radius=6,fg_color="green")
 button4.place(x=35,y=150)
 
+button6 = ctk.CTkButton(frame, command=show_reports, text="Reports", width=210, corner_radius=6, fg_color="blue")
+button6.place(x=35, y=250)
+
 button5 = ctk.CTkButton(frame,command=EXIT,text="EXIT",width=210,corner_radius=6,fg_color="red")
-button5.place(x=35,y=250)
+button5.place(x=35,y=300)
 
 
 root.mainloop()

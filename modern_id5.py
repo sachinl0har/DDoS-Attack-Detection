@@ -343,9 +343,9 @@ def ok():
 
 
 def show_reports():
-
     for widget in frame4.winfo_children():
         widget.destroy()
+
     # Retrieve data from SQLite tables
     cursor.execute("SELECT * FROM TrainLogs")
     train_logs = cursor.fetchall()
@@ -353,6 +353,10 @@ def show_reports():
     test_logs = cursor.fetchall()
     cursor.execute("SELECT * FROM FileLogs")
     file_logs = cursor.fetchall()
+
+    # Add heading for TrainLogs
+    train_heading = ctk.CTkLabel(frame4, text="Train Logs", font=("Arial", 14, "bold"))
+    train_heading.pack()
 
     # Display TrainLogs in a Treeview
     train_treeview = ttk.Treeview(frame4)
@@ -366,6 +370,10 @@ def show_reports():
 
     train_treeview.pack()
 
+    # Add heading for TestLogs
+    test_heading = ctk.CTkLabel(frame4, text="Test Logs", font=("Arial", 14, "bold"))
+    test_heading.pack()
+
     # Display TestLogs in a Treeview
     test_treeview = ttk.Treeview(frame4)
     test_treeview['columns'] = ('Model', 'Result')
@@ -377,6 +385,10 @@ def show_reports():
         test_treeview.insert('', 'end', text=log[0], values=(log[1], log[2]))
 
     test_treeview.pack()
+
+    # Add heading for FileLogs
+    file_heading = ctk.CTkLabel(frame4, text="File Logs", font=("Arial", 14, "bold"))
+    file_heading.pack()
 
     # Display FileLogs in a Treeview
     file_treeview = ttk.Treeview(frame4)

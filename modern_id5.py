@@ -3,14 +3,103 @@ from tkinter import *
 import pandas as pd
 import numpy as np
 import customtkinter as ctk
-#from hmmlearn import hmm
+import sklearn
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
-from sklearn import model_selection
+from sklearn.metrics import confusion_matrix
+
 from PIL import Image, ImageTk
+import sqlite3
+from datetime import datetime
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+
+import seaborn as sns
+
+conn = sqlite3.connect('evaluation.db')
+cursor = conn.cursor()
+
+# Create tables if they don't exist
+cursor.execute('''CREATE TABLE IF NOT EXISTS TrainLogs (
+                id INTEGER PRIMARY KEY,
+                model TEXT,
+                accuracy FLOAT
+                )''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS TestLogs (
+                id INTEGER PRIMARY KEY,
+                model TEXT,
+                result TEXT
+                )''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS FileLogs (
+                id INTEGER PRIMARY KEY,
+                protocol_type TEXT,
+                flag TEXT,
+                service TEXT,
+                is_ddos INTEGER,
+                timestamp TEXT
+                )''')
+
+
+def log_train(model_name, accuracy):
+    # Log train operation
+    cursor.execute("INSERT INTO TrainLogs (model, accuracy) VALUES (?, ?)", (model_name, accuracy))
+    conn.commit()
+
+def log_test(model_name, result):
+    # Log test operation
+    cursor.execute("INSERT INTO TestLogs (model, result) VALUES (?, ?)", (model_name, result))
+    conn.commit()
+
+def log_file_data(protocol_type, flag, service, is_ddos):
+    # Log file data along with DDoS information and timestamp
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute("INSERT INTO FileLogs (protocol_type, flag, service, is_ddos, timestamp) VALUES (?, ?, ?, ?, ?)",
+                   (protocol_type, flag, service, is_ddos, timestamp))
+    conn.commit()
+
+def show_analytics(model_name, report, accuracy, confusion_matrix):
+    frame4.tkraise()
+    
+    # classrepo= ctk.CTkLabel(frame4,text ="Classification report ",width=35,font=("Bahnschrift Light",27,"bold"))
+    # classrepo.place(x=50,y=20)
+            
+    # label4 = ctk.CTkLabel(frame4,text = report, font=("Tempus Sanc ITC",15))
+    # label4.place(x=85,y=85)
+            
+    # label5 = ctk.CTkLabel(frame4,text ="Accuracy : {:.2f}%\nModel saved as {}.joblib".format(accuracy, model_name), width=35, height=3, font=("Tempus Sanc ITC",16))
+    # label5.place(x=70,y=300)
+
+    # Plotting accuracy bar chart
+    fig1 = plt.figure(figsize=(8, 6))
+    plt.bar(["Accuracy"], [accuracy], color='green')
+    plt.title('Accuracy')
+    plt.ylabel('Percentage')
+    plt.ylim(0, 100)
+    plt.tight_layout()
+    canvas1 = FigureCanvasTkAgg(fig1, master=frame4)
+    canvas1.draw()
+    canvas1.get_tk_widget().place(x=100, y=350)
+
+    # Plotting confusion matrix
+    fig2 = plt.figure(figsize=(8, 6))
+    sns.heatmap(confusion_matrix, annot=True, cmap='Blues', fmt='g')
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted Labels')
+    plt.ylabel('True Labels')
+    plt.tight_layout()
+    canvas2 = FigureCanvasTkAgg(fig2, master=frame4)
+    canvas2.draw()
+    canvas2.get_tk_widget().place(x=550, y=350)
+
+    # Show plots
+    plt.show()
 
 on = True
 
@@ -47,16 +136,7 @@ frame4.place(x=450,y=180)
 
 head = ctk.CTkLabel(frame3,text = "DDOS ATTACK DETECTION SYSTEM", corner_radius=6)
 head.place(x=50,y=20)
-"""
-tpot_data = pd.read_csv(r'E:\IDS Dataset\KDD_CUP_2.csv')#, sep='COLUMN_SEPARATOR', dtype=np.float64)
-tpot_data['protocol_type']=le.fit_transform(tpot_data['protocol_type'])
-tpot_data['service']=le.fit_transform(tpot_data['service'])
-tpot_data['flag']=le.fit_transform(tpot_data['flag'])
 
-x = tpot_data.drop(['label'],axis=1)
-y = tpot_data['label']
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20)
-"""
 new_data = pd.read_csv(r"Trainnew.csv")#, sep='COLUMN_SEPARATOR', dtype=np.float64)
 new_data['protocol_type']=le.fit_transform(new_data['protocol_type'])
 new_data['service']=le.fit_transform(new_data['service'])
@@ -71,8 +151,6 @@ new_data['service']=le.fit_transform(new_data['service'])
 new_data['flag']=le.fit_transform(new_data['flag'])
 x_test = new_data.drop(["label"],axis=1)
 y_test = new_data["label"]
-
-
 
     
 def SVM():
@@ -104,8 +182,12 @@ def SVM():
     dump (model2,"SVM.joblib")
     print("Model saved as SVM.joblib")
     
-
+    log_train("SVM", accuracy_score(y_test, model2_pred))
+    log_test("SVM", classification_report(y_test, model2_pred))
     
+    model2_pred = model2.predict(x_test) 
+    cm = confusion_matrix(y_test, model2_pred)
+    show_analytics("SVM", classification_report(y_test, model2_pred), accuracy_score(y_test, model2_pred), cm)
 
 
     
@@ -146,14 +228,14 @@ def RF():
     from joblib import dump
     dump (model5,"RF.joblib")
     print("Model saved as RF.joblib")  
-        
-    
-    
-    
 
+    log_train("Random Forest", accuracy_score(y_test, model5_pred))
+    log_test("Random Forest", classification_report(y_test, model5_pred))
 
+    model5_pred = model5.predict(x_test) 
+    cm = confusion_matrix(y_test, model5_pred)
+    show_analytics("Random Forest", classification_report(y_test, model5_pred), accuracy_score(y_test, model5_pred), cm)
 
-    
 def EXIT():
     root.destroy()
 
@@ -186,62 +268,64 @@ TMStateEL.bind("<<ComboboxSelected>>", lambda event: print(State_Name[TMStateEL.
 TMStateEL.current(0)
 TMStateEL.place(x=45,y=120)
 
-model_list = {"SUPPORT VECTOR MACHINE":"OLD_MODELS/SVM.joblib","RANDOM FOREST":"OLD_MODELS/RF.joblib"}
+model_list = {"SUPPORT VECTOR MACHINE":r"OLD_MODELS/SVM.joblib","RANDOM FOREST":r"OLD_MODELS/RF.joblib"}
 
 
 def ok():
-    
+    print("Choosing file...")
     frame2.tkraise()
-    print ("value is:" + TMStateEL.get())
+    print("Value is:", TMStateEL.get())
     model_choice = TMStateEL.get()
-    choosen_model = model_list[model_choice]
-    print(choosen_model)
-    from joblib import load
-    ans = load(choosen_model)
+    chosen_model = model_list[model_choice]
+    print("Chosen model:", chosen_model)
     
+    from joblib import load
+    ans = load(chosen_model)
+    
+    # Print feature names used during training
+    # print("Feature names during training:", ans.feature_names_in_)
     
     from tkinter.filedialog import askopenfilename
-    fileName = askopenfilename(initialdir='D:\MCA\SEM 4\PROJECT\DDoS-Attack-Detection', title='Select DataFile For INTRUSION Testing',
+    fileName = askopenfilename(initialdir=r'D:/MCA/SEM 4/PROJECT/DDoS-Attack-Detection', title='Select DataFile For INTRUSION Testing',
                                        filetypes=[("all files", "*.csv*")])
+    print("Selected file:", fileName)
     
-    file =pd.read_csv(fileName)
-    file['protocol_type']=le.fit_transform(file['protocol_type'])
-    file['service']=le.fit_transform(file['service'])
-    file['flag']=le.fit_transform(file['flag'])
+    if not fileName:
+        print("No file selected. Aborting.")
+        return
+    
+    file = pd.read_csv(fileName)
+    file['protocol_type'] = le.fit_transform(file['protocol_type'])
+    file['service'] = le.fit_transform(file['service'])
+    file['flag'] = le.fit_transform(file['flag'])
 
-    qn = file.drop(["label"],axis=1)
+    qn = file.drop(["label"], axis=1)
+    
+    # Print feature names in the prediction dataset
+    print("Feature names in prediction dataset:", list(qn.columns))
     
     A = ans.predict(qn)
-    print(A)
-    def listToString(s): 
+    print("Prediction:", A)
     
-        # initialize an empty string
-        str1 = "" 
-        
-        # traverse in the string  
-        for ele in s: 
-            str1 += ele  
-        
-        # return string  
-        return str1 
-    print(listToString(A)) 
-    B = listToString(A)
+    B = A[0]  # Assuming A is an array with a single prediction
     
     if B == 'normal':
         frame2.tkraise()
         output = 'DDOS Attack Not Detected'
-        frame2.configure(fg_color = 'green')
-        
-        attack = ctk.CTkLabel(frame2,text=str(output),width=30)
-        attack.place(x=150,y=150)
-
+        frame2.configure(fg_color='green')
+        attack = ctk.CTkLabel(frame2, text=str(output), width=30)
+        attack.place(x=150, y=150)
+        is_ddos_value = False
     else:
         frame5.tkraise()
         output = 'DDOS Attack Detected'
-        frame5.configure(fg_color = 'red')
-        attack = ctk.CTkLabel(frame5,text=str(output),width=30)
-        attack.place(x=150,y=150)
- 
+        frame5.configure(fg_color='red')
+        attack = ctk.CTkLabel(frame5, text=str(output), width=30)
+        attack.place(x=150, y=150)
+        is_ddos_value = True
+
+    log_file_data(file['protocol_type'], file['flag'], file['service'], is_ddos_value)
+
 
    
 
